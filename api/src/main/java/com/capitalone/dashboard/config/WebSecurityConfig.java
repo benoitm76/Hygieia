@@ -11,10 +11,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configurers.ldap.LdapAuthenticationProviderConfigurer;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.ldap.authentication.NullLdapAuthoritiesPopulator;
 import org.springframework.security.ldap.authentication.ad.ActiveDirectoryLdapAuthenticationProvider;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -107,11 +109,17 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         String ldapServerUrl = authProperties.getLdapServerUrl();
 		String ldapUserDnPattern = authProperties.getLdapUserDnPattern();
 		if (StringUtils.isNotBlank(ldapServerUrl) && StringUtils.isNotBlank(ldapUserDnPattern)) {
-			auth.ldapAuthentication()
+			LdapAuthenticationProviderConfigurer<AuthenticationManagerBuilder> ldapAuthConfigurer = auth.ldapAuthentication();
+
+			ldapAuthConfigurer
 			.userDnPatterns(ldapUserDnPattern)
 			.contextSource().url(ldapServerUrl);
+
+			if (authProperties.isLdapDisableGroupAuthorization()) {
+				ldapAuthConfigurer.ldapAuthoritiesPopulator(new NullLdapAuthoritiesPopulator());
+			}
 		}
-    }
+	}
 	
 	@Bean
 	protected StandardLoginRequestFilter standardLoginRequestFilter() throws Exception {
